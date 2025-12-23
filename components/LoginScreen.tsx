@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { ShieldAlert, LogIn } from 'lucide-react';
 
@@ -24,8 +23,8 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
     <div className="flex flex-col items-center justify-center animate-fade-in">
       <div className="text-center mb-8">
         <ShieldAlert className="w-16 h-16 text-red-600 mx-auto mb-4" />
-        <h1 className="text-3xl font-bold text-zinc-100">VTR CHOQUE</h1>
-        <p className="text-zinc-400">Sistema de Monitoramento PMPB</p>
+        <h1 className="text-3xl font-bold text-zinc-100">ALERTA BPCHOQUE</h1>
+        <p className="text-zinc-400">BATALHÃO DE POLICIAMENTO DE CHOQUE</p>
       </div>
       <form onSubmit={handleSubmit} className="w-full space-y-4">
         <div>

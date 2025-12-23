@@ -64,7 +64,12 @@ const App: React.FC = () => {
         setLoading(false);
       }, (error: any) => {
         console.error("Error fetching vehicles:", error);
-        showNotification('Erro ao carregar dados. Verifique a conexão.', 'error');
+        if (error.code === 'permission-denied') {
+            console.error("FIRESTORE PERMISSION DENIED: Please check your Firestore security rules in the Firebase console.");
+            showNotification('Falha de permissão. Contate o administrador.', 'error');
+        } else {
+            showNotification('Erro ao carregar dados. Verifique a conexão.', 'error');
+        }
         setLoading(false);
       });
 
