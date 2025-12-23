@@ -1,9 +1,9 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Veiculo, Status, Notification } from './types';
-import LoginScreen from './components/LoginScreen';
-import Dashboard from './components/Dashboard';
-import NotificationPopup from './components/NotificationPopup';
+import { Veiculo, Status, Notification } from './types.ts';
+import LoginScreen from './components/LoginScreen.tsx';
+import Dashboard from './components/Dashboard.tsx';
+import NotificationPopup from './components/NotificationPopup.tsx';
 import { Loader2 } from 'lucide-react';
 
 declare global {
