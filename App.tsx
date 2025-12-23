@@ -20,6 +20,10 @@ const App: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [notification, setNotification] = useState<Notification>(null);
 
+  // Define the collection path once to ensure consistency and correctness.
+  // The leading slash was removed as it's invalid for Firestore collection paths.
+  const collectionPath = `artifacts/${__app_id}/public/data/veiculos`;
+
   useEffect(() => {
     try {
       if (!firebase.apps.length) {
@@ -49,7 +53,6 @@ const App: React.FC = () => {
     if (!user || !db) return;
 
     setLoading(true);
-    const collectionPath = `/artifacts/${__app_id}/public/data/veiculos`;
     const unsubscribe = db.collection(collectionPath)
       .orderBy('timestamp', 'desc')
       .onSnapshot((snapshot: any) => {
@@ -66,7 +69,7 @@ const App: React.FC = () => {
       });
 
     return () => unsubscribe();
-  }, [user, db]);
+  }, [user, db, collectionPath]);
 
   const showNotification = (message: string, type: 'success' | 'error') => {
     setNotification({ message, type });
@@ -93,7 +96,6 @@ const App: React.FC = () => {
     }
 
     try {
-      const collectionPath = `/artifacts/${__app_id}/public/data/veiculos`;
       await db.collection(collectionPath).add({
         ...newVehicle,
         placa: newVehicle.placa.toUpperCase(),
@@ -105,13 +107,12 @@ const App: React.FC = () => {
       console.error("Error adding vehicle:", error);
       showNotification(`Erro ao cadastrar alerta: ${error.message}`, 'error');
     }
-  }, [db, vehicles]);
+  }, [db, vehicles, collectionPath]);
 
   const handleUpdateStatus = useCallback(async (id: string) => {
     if (!db) return;
 
     try {
-        const collectionPath = `/artifacts/${__app_id}/public/data/veiculos`;
         await db.collection(collectionPath).doc(id).update({
             status: Status.RECUPERADO,
         });
@@ -120,7 +121,7 @@ const App: React.FC = () => {
         console.error("Error updating vehicle status:", error);
         showNotification(`Erro ao atualizar status: ${error.message}`, 'error');
     }
-  }, [db]);
+  }, [db, collectionPath]);
 
   if (loading && !vehicles.length) {
     return (
