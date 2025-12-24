@@ -1,135 +1,61 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Veiculo } from '../types.ts';
-import { X, Send, AlertTriangle } from 'lucide-react';
+import { X, Send, Save, FilePenLine } from 'lucide-react';
 
 type NewVehicleData = Omit<Veiculo, 'id' | 'status' | 'timestamp'>;
 
 interface AddVehicleModalProps {
   onClose: () => void;
-  onAddVehicle: (newVehicle: NewVehicleData) => Promise<void>;
+  onSave: (data: NewVehicleData, id?: string) => Promise<void>;
+  vehicleToEdit?: Veiculo | null;
 }
 
-const AddVehicleModal: React.FC<AddVehicleModalProps> = ({ onClose, onAddVehicle }) => {
-  const [placa, setPlaca] = useState('');
-  const [tipo, setTipo] = useState('Carro');
-  const [modelo, setModelo] = useState('');
-  const [cor, setCor] = useState('');
-  const [local, setLocal] = useState('');
-  const [observacoes, setObservacoes] = useState('');
+const AddVehicleModal: React.FC<AddVehicleModalProps> = ({ onClose, onSave, vehicleToEdit }) => {
+  const [formData, setFormData] = useState<NewVehicleData>({
+    placa: '',
+    tipo: 'Carro',
+    modelo: '',
+    cor: '',
+    local: '',
+    observacoes: '',
+  });
   const [isLoading, setIsLoading] = useState(false);
-  const [vehicleToConfirm, setVehicleToConfirm] = useState<NewVehicleData | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setVehicleToConfirm({ placa, tipo, modelo, cor, local, observacoes });
+  const isEditMode = !!vehicleToEdit;
+
+  useEffect(() => {
+    if (isEditMode) {
+      setFormData({
+        placa: vehicleToEdit.placa,
+        tipo: vehicleToEdit.tipo,
+        modelo: vehicleToEdit.modelo,
+        cor: vehicleToEdit.cor || '',
+        local: vehicleToEdit.local,
+        observacoes: vehicleToEdit.observacoes,
+      });
+    }
+  }, [vehicleToEdit, isEditMode]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleConfirm = async () => {
-    if (!vehicleToConfirm) return;
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.placa.trim()) {
+        // The `required` attribute on the input will handle browser validation.
+        return;
+    }
     
     setIsLoading(true);
-    await onAddVehicle(vehicleToConfirm);
+    await onSave(formData, vehicleToEdit?.id);
     setIsLoading(false);
     onClose();
   };
 
   const inputClass = "w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-zinc-100 focus:ring-2 focus:ring-red-600 focus:border-red-600 outline-none transition";
-  
-  const renderConfirmationView = () => (
-    <>
-      <div className="flex justify-between items-center p-4 border-b border-zinc-800">
-        <h2 className="text-xl font-bold text-red-600 flex items-center"><AlertTriangle className="mr-2"/>Confirmar Alerta</h2>
-        <button onClick={onClose} className="text-zinc-400 hover:text-white">
-          <X className="w-6 h-6" />
-        </button>
-      </div>
-      <div className="p-6 space-y-4">
-        <p className="text-zinc-300">Por favor, revise os dados antes de emitir o alerta para o sistema.</p>
-        <div className="bg-zinc-800 p-4 rounded-md space-y-2 border border-zinc-700">
-            <p className="text-zinc-400">Placa: <span className="font-bold text-zinc-100">{vehicleToConfirm?.placa}</span></p>
-            <p className="text-zinc-400">Modelo: <span className="font-bold text-zinc-100">{vehicleToConfirm?.modelo || 'N/A'}</span></p>
-        </div>
-        <div className="pt-2 flex justify-end space-x-3">
-            <button
-                onClick={() => setVehicleToConfirm(null)}
-                className="bg-zinc-700 text-white font-bold py-2 px-6 rounded-md hover:bg-zinc-600 transition-colors"
-            >
-                Editar
-            </button>
-            <button
-                onClick={handleConfirm}
-                disabled={isLoading}
-                className="bg-red-600 text-white font-bold py-2 px-6 rounded-md hover:bg-red-700 transition-colors flex items-center justify-center disabled:bg-red-800 disabled:cursor-not-allowed"
-            >
-                {isLoading ? (
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                ) : (
-                    <>
-                        <Send className="w-5 h-5 mr-2" />
-                        <span>Confirmar e Emitir</span>
-                    </>
-                )}
-            </button>
-        </div>
-      </div>
-    </>
-  );
-
-  const renderFormView = () => (
-    <>
-      <div className="flex justify-between items-center p-4 border-b border-zinc-800">
-        <h2 className="text-xl font-bold text-red-600">Cadastrar Novo Alerta</h2>
-        <button onClick={onClose} className="text-zinc-400 hover:text-white">
-          <X className="w-6 h-6" />
-        </button>
-      </div>
-      <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-           <div>
-              <label htmlFor="placa" className="block text-sm font-medium text-zinc-400 mb-1">Placa *</label>
-              <input id="placa" type="text" value={placa} onChange={(e) => setPlaca(e.target.value.toUpperCase())} className={inputClass} required maxLength={7} />
-            </div>
-            <div>
-              <label htmlFor="tipo" className="block text-sm font-medium text-zinc-400 mb-1">Tipo</label>
-              <select id="tipo" value={tipo} onChange={(e) => setTipo(e.target.value)} className={inputClass}>
-                <option>Carro</option>
-                <option>Moto</option>
-                <option>Caminhão</option>
-                <option>Outro</option>
-              </select>
-            </div>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-              <label htmlFor="modelo" className="block text-sm font-medium text-zinc-400 mb-1">Modelo</label>
-              <input id="modelo" type="text" value={modelo} onChange={(e) => setModelo(e.target.value)} className={inputClass} />
-          </div>
-           <div>
-              <label htmlFor="cor" className="block text-sm font-medium text-zinc-400 mb-1">Cor</label>
-              <input id="cor" type="text" value={cor} onChange={(e) => setCor(e.target.value)} className={inputClass} />
-            </div>
-        </div>
-        <div>
-            <label htmlFor="local" className="block text-sm font-medium text-zinc-400 mb-1">Local do Roubo</label>
-            <input id="local" type="text" value={local} onChange={(e) => setLocal(e.target.value)} className={inputClass} />
-        </div>
-        <div>
-          <label htmlFor="observacoes" className="block text-sm font-medium text-zinc-400 mb-1">Observações</label>
-          <textarea id="observacoes" value={observacoes} onChange={(e) => setObservacoes(e.target.value)} className={inputClass} rows={3}></textarea>
-        </div>
-        <div className="pt-2 flex justify-end">
-          <button
-              type="submit"
-              className="bg-red-600 text-white font-bold py-2 px-6 rounded-md hover:bg-red-700 transition-colors flex items-center justify-center"
-          >
-              <Send className="w-5 h-5 mr-2" />
-              <span>Revisar e Emitir</span>
-          </button>
-        </div>
-      </form>
-    </>
-  );
+  const labelClass = "block text-sm font-medium text-zinc-400 mb-1";
 
   return (
     <div 
@@ -140,7 +66,74 @@ const AddVehicleModal: React.FC<AddVehicleModalProps> = ({ onClose, onAddVehicle
         className="bg-zinc-900 rounded-lg shadow-xl w-full max-w-lg border border-zinc-800 animate-slide-in-up"
         onClick={(e) => e.stopPropagation()}
       >
-        {vehicleToConfirm ? renderConfirmationView() : renderFormView()}
+        <div className="flex justify-between items-center p-4 border-b border-zinc-800">
+          <h2 className="text-xl font-bold text-zinc-100 flex items-center">
+            {isEditMode ? <FilePenLine className="mr-2 text-red-500" /> : <Send className="mr-2 text-red-500" />}
+            {isEditMode ? 'Editar Alerta' : 'Novo Alerta de Roubo'}
+          </h2>
+          <button onClick={onClose} className="text-zinc-400 hover:text-white">
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+        
+        <form onSubmit={handleSubmit}>
+            <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+                 <div>
+                    <label htmlFor="placa" className={labelClass}>Placa*</label>
+                    <input id="placa" name="placa" type="text" value={formData.placa} onChange={handleChange} className={inputClass} required />
+                </div>
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label htmlFor="tipo" className={labelClass}>Tipo</label>
+                        <select id="tipo" name="tipo" value={formData.tipo} onChange={handleChange} className={inputClass}>
+                            <option>Carro</option>
+                            <option>Moto</option>
+                            <option>Caminhão</option>
+                            <option>Outro</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label htmlFor="modelo" className={labelClass}>Modelo</label>
+                        <input id="modelo" name="modelo" type="text" value={formData.modelo} onChange={handleChange} className={inputClass} />
+                    </div>
+                </div>
+                <div>
+                    <label htmlFor="cor" className={labelClass}>Cor</label>
+                    <input id="cor" name="cor" type="text" value={formData.cor} onChange={handleChange} className={inputClass} />
+                </div>
+                <div>
+                    <label htmlFor="local" className={labelClass}>Local do Fato</label>
+                    <input id="local" name="local" type="text" value={formData.local} onChange={handleChange} className={inputClass} />
+                </div>
+                <div>
+                    <label htmlFor="observacoes" className={labelClass}>Observações</label>
+                    <textarea id="observacoes" name="observacoes" value={formData.observacoes} onChange={handleChange} className={inputClass} rows={3}></textarea>
+                </div>
+            </div>
+            <div className="p-4 bg-zinc-900/50 flex justify-end space-x-3 rounded-b-lg">
+                <button
+                    type="button"
+                    onClick={onClose}
+                    className="bg-zinc-700 text-white font-bold py-2 px-6 rounded-md hover:bg-zinc-600 transition-colors"
+                >
+                    Cancelar
+                </button>
+                <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="bg-red-600 text-white font-bold py-2 px-6 rounded-md hover:bg-red-700 transition-colors flex items-center justify-center disabled:bg-red-800 disabled:cursor-not-allowed"
+                >
+                    {isLoading ? (
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                    ) : (
+                        <>
+                            {isEditMode ? <Save className="w-5 h-5 mr-2" /> : <Send className="w-5 h-5 mr-2" />}
+                            <span>{isEditMode ? 'Salvar Alterações' : 'Cadastrar Alerta'}</span>
+                        </>
+                    )}
+                </button>
+            </div>
+        </form>
       </div>
     </div>
   );

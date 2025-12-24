@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { Veiculo, Status, Notification } from './types.ts';
 import LoginScreen from './components/LoginScreen.tsx';
@@ -114,6 +113,21 @@ const App: React.FC = () => {
     }
   }, [db, vehicles, collectionPath]);
 
+  const handleEditVehicle = useCallback(async (id: string, updatedData: Omit<Veiculo, 'id' | 'status' | 'timestamp'>) => {
+    if (!db) return;
+
+    try {
+        await db.collection(collectionPath).doc(id).update({
+            ...updatedData,
+            placa: updatedData.placa.toUpperCase(),
+        });
+        showNotification('Alerta atualizado com sucesso!', 'success');
+    } catch (error: any) {
+        console.error("Error updating vehicle:", error);
+        showNotification(`Erro ao atualizar alerta: ${error.message}`, 'error');
+    }
+  }, [db, collectionPath]);
+
   const handleUpdateStatus = useCallback(async (id: string) => {
     if (!db) return;
 
@@ -125,6 +139,18 @@ const App: React.FC = () => {
     } catch (error: any)        {
         console.error("Error updating vehicle status:", error);
         showNotification(`Erro ao atualizar status: ${error.message}`, 'error');
+    }
+  }, [db, collectionPath]);
+
+  const handleDeleteVehicle = useCallback(async (id: string) => {
+    if (!db) return;
+
+    try {
+        await db.collection(collectionPath).doc(id).delete();
+        showNotification('Alerta excluído com sucesso.', 'success');
+    } catch (error: any) {
+        console.error("Error deleting vehicle:", error);
+        showNotification(`Erro ao excluir alerta: ${error.message}`, 'error');
     }
   }, [db, collectionPath]);
 
@@ -145,7 +171,9 @@ const App: React.FC = () => {
                 <Dashboard 
                     vehicles={vehicles}
                     onAddVehicle={handleAddVehicle}
+                    onEditVehicle={handleEditVehicle}
                     onUpdateStatus={handleUpdateStatus}
+                    onDeleteVehicle={handleDeleteVehicle}
                 />
             )}
         </div>
