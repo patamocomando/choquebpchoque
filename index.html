@@ -2,18 +2,20 @@
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgZmlsbD0iIzAwMDAwMCIvPjxwYXRoIGQ9Ik0yNTYgNjRMMTA2IDEyOHYxMjhjMCA5Mi41IDYzLjggMTc5LjIgMTUwIDIwOCAxMS4zLTMuOCAyMi4yLTguNCAzMi40LTEzLjggTDI1NiA2NHoiIGZpbGw9IiNjODAwMDAiLz48cGF0aCBkPSJNMjU2IDY0djMzNmM4Ni4yLTI4LjggMTUwLTExNS41IDE1MC0yMDhWMTI4TDI1NiA2NHoiIGZpbGw9IiNhYTAwMDAiLz48cG9seWdvbiBwb2ludHM9IjI1NiwxMjggMTkyLDI1NiAyNTYsMjU2IDE5MiwzODQgMzIwLDI1NiAyNTYsMjU2IDMyMCwxMjgiIGZpbGw9IiNmZmZmZmYiLz48L3N2Zz4=" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <title>SIVA - Alerta BPCHOQUE</title>
+    <title>SIVA - BPCHOQUE</title>
     
-    <!-- PWA Meta Tags -->
+    <!-- PWA / Native WebAPK Meta Tags -->
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#000000" />
+    <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="SIVA" />
+    <meta name="application-name" content="SIVA" />
     
-    <!-- iOS Tactical Icon -->
+    <!-- iOS Icon -->
     <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgZmlsbD0iIzAwMDAwMCIvPjxwYXRoIGQ9Ik0yNTYgNjRMMTA2IDEyOHYxMjhjMCA5Mi41IDYzLjggMTc5LjIgMTUwIDIwOCAxMS4zLTMuOCAyMi4yLTguNCAzMi40LTEzLjggTDI1NiA2NHoiIGZpbGw9IiNjODAwMDAiLz48cGF0aCBkPSJNMjU2IDY0djMzNmM4Ni4yLTI4LjggMTUwLTExNS41IDE1MC0yMDhWMTI4TDI1NiA2NHoiIGZpbGw9IiNhYTAwMDAiLz48cG9seWdvbiBwb2ludHM9IjI1NiwxMjggMTkyLDI1NiAyNTYsMjU2IDE5MiwzODQgMzIwLDI1NiAyNTYsMjU2IDMyMCwxMjgiIGZpbGw9IiNmZmZmZmYiLz48L3N2Zz4=" />
     
     <script src="https://cdn.tailwindcss.com"></script>
@@ -28,35 +30,21 @@
     }
     </script>
     <style>
-      /* Previne scroll elástico no iOS e garante fundo preto total */
       html, body {
         background-color: #000000;
         margin: 0;
         padding: 0;
         overflow-x: hidden;
         height: 100%;
-        color-scheme: dark; /* Informa ao sistema que o app é dark mode */
+        color-scheme: dark;
+        user-select: none; /* Impede seleção de texto para parecer app nativo */
+        -webkit-tap-highlight-color: transparent;
       }
 
-      /* Ajuste para Notch e barras de sistema */
       #root {
         padding-top: env(safe-area-inset-top);
         padding-bottom: env(safe-area-inset-bottom);
         min-height: 100vh;
-        display: flex;
-        flex-direction: column;
-      }
-
-      /* Estilização da barra de rolagem para combinar com o sistema */
-      ::-webkit-scrollbar {
-        width: 4px;
-      }
-      ::-webkit-scrollbar-track {
-        background: #000;
-      }
-      ::-webkit-scrollbar-thumb {
-        background: #333;
-        border-radius: 10px;
       }
     </style>
   </head>
@@ -64,7 +52,6 @@
     <div id="root"></div>
 
     <script>
-      // Firebase configuration
       var __firebase_config = {
         apiKey: "AIzaSyD8si2zrFm0gTXf1IiFPMDKw2h9dU0cZYw",
         authDomain: "choque-pmpb.firebaseapp.com",
@@ -75,10 +62,11 @@
       };
       var __app_id = "1:20528860006:web:c2556a032c5dd66e5896a7";
 
-      // Register Service Worker for PWA
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js').catch(err => console.log('SW registration failed:', err));
+          navigator.serviceWorker.register('/sw.js', { scope: '/' })
+            .then(reg => console.log('SW Registered'))
+            .catch(err => console.log('SW Error', err));
         });
       }
     </script>
