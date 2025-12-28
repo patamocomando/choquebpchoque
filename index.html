@@ -13,6 +13,9 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="SIVA" />
     
+    <!-- iOS Tactical Icon -->
+    <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgZmlsbD0iIzAwMDAwMCIvPjxwYXRoIGQ9Ik0yNTYgNjRMMTA2IDEyOHYxMjhjMCA5Mi41IDYzLjggMTc5LjIgMTUwIDIwOCAxMS4zLTMuOCAyMi4yLTguNCAzMi40LTEzLjggTDI1NiA2NHoiIGZpbGw9IiNjODAwMDAiLz48cGF0aCBkPSJNMjU2IDY0djMzNmM4Ni4yLTI4LjggMTUwLTExNS41IDE1MC0yMDhWMTI4TDI1NiA2NHoiIGZpbGw9IiNhYTAwMDAiLz48cG9seWdvbiBwb2ludHM9IjI1NiwxMjggMTkyLDI1NiAyNTYsMjU2IDE5MiwzODQgMzIwLDI1NiAyNTYsMjU2IDMyMCwxMjgiIGZpbGw9IiNmZmZmZmYiLz48L3N2Zz4=" />
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <script type="importmap">
     {
@@ -32,6 +35,28 @@
         padding: 0;
         overflow-x: hidden;
         height: 100%;
+        color-scheme: dark; /* Informa ao sistema que o app é dark mode */
+      }
+
+      /* Ajuste para Notch e barras de sistema */
+      #root {
+        padding-top: env(safe-area-inset-top);
+        padding-bottom: env(safe-area-inset-bottom);
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+
+      /* Estilização da barra de rolagem para combinar com o sistema */
+      ::-webkit-scrollbar {
+        width: 4px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #000;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #333;
+        border-radius: 10px;
       }
     </style>
   </head>
