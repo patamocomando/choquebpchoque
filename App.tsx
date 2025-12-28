@@ -3,7 +3,7 @@ import { Veiculo, Status, Notification } from './types.ts';
 import LoginScreen from './components/LoginScreen.tsx';
 import Dashboard from './components/Dashboard.tsx';
 import NotificationPopup from './components/NotificationPopup.tsx';
-import { Loader2, LogOut } from 'lucide-react';
+import { Loader2, LogOut, Download } from 'lucide-react';
 
 declare global {
   const __firebase_config: any;
@@ -18,10 +18,17 @@ const App: React.FC = () => {
   const [vehicles, setVehicles] = useState<Veiculo[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [notification, setNotification] = useState<Notification>(null);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
 
   const collectionPath = `artifacts/${__app_id}/public/data/veiculos`;
 
   useEffect(() => {
+    // Escuta evento de instalação do PWA
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    });
+
     try {
       if (!firebase.apps.length) {
         firebase.initializeApp(__firebase_config);
@@ -33,8 +40,6 @@ const App: React.FC = () => {
       auth.signInAnonymously()
         .then((userCredential: any) => {
           setUser(userCredential.user);
-          
-          // Check for persistent login
           const savedAuth = localStorage.getItem('siva_auth_persistent');
           if (savedAuth === 'true') {
             setIsAuthenticated(true);
@@ -70,6 +75,15 @@ const App: React.FC = () => {
 
     return () => unsubscribe();
   }, [user, db, collectionPath]);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setDeferredPrompt(null);
+    }
+  };
 
   const showNotification = (message: string, type: 'success' | 'error') => {
     setNotification({ message, type });
@@ -181,8 +195,21 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-black text-zinc-300 font-sans flex items-start justify-center pt-8 md:pt-16 px-4 pb-12">
-        <div className="w-full max-w-lg mx-auto">
+    <div className="min-h-screen bg-black text-zinc-300 font-sans flex flex-col items-center pt-8 md:pt-16 px-4 pb-12">
+        <div className="w-full max-w-lg">
+            {deferredPrompt && (
+              <button 
+                onClick={handleInstallClick}
+                className="w-full mb-6 bg-zinc-900 border border-red-900/50 p-3 rounded-lg flex items-center justify-between text-sm animate-pulse hover:bg-zinc-800 transition-colors"
+              >
+                <div className="flex items-center">
+                  <Download className="w-5 h-5 text-red-500 mr-3" />
+                  <span className="text-zinc-200 font-bold uppercase tracking-tighter">Instalar SIVA no Aparelho</span>
+                </div>
+                <span className="bg-red-600 text-white px-2 py-1 rounded text-[10px] font-black">FIXAR APP</span>
+              </button>
+            )}
+
             {!isAuthenticated ? (
                 <LoginScreen onLogin={handleLogin} />
             ) : (
