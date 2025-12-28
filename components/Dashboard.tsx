@@ -13,6 +13,7 @@ interface DashboardProps {
   onEditVehicle: (id: string, data: NewVehicleData) => Promise<void>;
   onUpdateStatus: (id: string) => Promise<void>;
   onDeleteVehicle: (id: string) => Promise<void>;
+  onClearRecovered: () => Promise<void>;
 }
 
 const StatCard: React.FC<{ icon: React.ReactNode; title: string; value: number; color: string }> = ({ icon, title, value, color }) => (
@@ -29,7 +30,7 @@ const StatCard: React.FC<{ icon: React.ReactNode; title: string; value: number; 
 
 type View = 'list' | 'analysis';
 
-const Dashboard: React.FC<DashboardProps> = ({ vehicles, onAddVehicle, onEditVehicle, onUpdateStatus, onDeleteVehicle }) => {
+const Dashboard: React.FC<DashboardProps> = ({ vehicles, onAddVehicle, onEditVehicle, onUpdateStatus, onDeleteVehicle, onClearRecovered }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [vehicleToEdit, setVehicleToEdit] = useState<Veiculo | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -130,7 +131,7 @@ const Dashboard: React.FC<DashboardProps> = ({ vehicles, onAddVehicle, onEditVeh
             </>
         )}
 
-        {currentView === 'analysis' && <AnalysisDashboard vehicles={vehicles} />}
+        {currentView === 'analysis' && <AnalysisDashboard vehicles={vehicles} onClearRecovered={onClearRecovered} />}
         
         <button 
             onClick={handleOpenAddModal}

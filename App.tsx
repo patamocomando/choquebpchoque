@@ -3,7 +3,7 @@ import { Veiculo, Status, Notification } from './types.ts';
 import LoginScreen from './components/LoginScreen.tsx';
 import Dashboard from './components/Dashboard.tsx';
 import NotificationPopup from './components/NotificationPopup.tsx';
-import { Loader2 } from 'lucide-react';
+import { Loader2, LogOut } from 'lucide-react';
 
 declare global {
   const __firebase_config: any;
@@ -19,8 +19,6 @@ const App: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [notification, setNotification] = useState<Notification>(null);
 
-  // Define the collection path once to ensure consistency and correctness.
-  // The leading slash was removed as it's invalid for Firestore collection paths.
   const collectionPath = `artifacts/${__app_id}/public/data/veiculos`;
 
   useEffect(() => {
@@ -35,12 +33,18 @@ const App: React.FC = () => {
       auth.signInAnonymously()
         .then((userCredential: any) => {
           setUser(userCredential.user);
+          
+          // Check for persistent login
+          const savedAuth = localStorage.getItem('siva_auth_persistent');
+          if (savedAuth === 'true') {
+            setIsAuthenticated(true);
+          }
         })
         .catch((error: any) => {
           console.error("Anonymous sign-in failed:", error);
           showNotification(`Falha na autenticação: ${error.message}`, 'error');
-          setLoading(false);
-        });
+        })
+        .finally(() => setLoading(false));
     } catch (error: any) {
         console.error("Firebase initialization failed:", error);
         showNotification(`Falha na inicialização: ${error.message}`, 'error');
@@ -51,7 +55,6 @@ const App: React.FC = () => {
   useEffect(() => {
     if (!user || !db) return;
 
-    setLoading(true);
     const unsubscribe = db.collection(collectionPath)
       .orderBy('timestamp', 'desc')
       .onSnapshot((snapshot: any) => {
@@ -60,16 +63,9 @@ const App: React.FC = () => {
           ...doc.data(),
         } as Veiculo));
         setVehicles(vehiclesData);
-        setLoading(false);
       }, (error: any) => {
         console.error("Error fetching vehicles:", error);
-        if (error.code === 'permission-denied') {
-            console.error("FIRESTORE PERMISSION DENIED: Please check your Firestore security rules in the Firebase console.");
-            showNotification('Falha de permissão. Contate o administrador.', 'error');
-        } else {
-            showNotification('Erro ao carregar dados. Verifique a conexão.', 'error');
-        }
-        setLoading(false);
+        showNotification('Erro ao carregar dados.', 'error');
       });
 
     return () => unsubscribe();
@@ -80,25 +76,33 @@ const App: React.FC = () => {
     setTimeout(() => setNotification(null), 3000);
   };
 
-  const handleLogin = (matricula: string, senha_tatica: string): boolean => {
-    if (matricula === 'Admin' && senha_tatica === 'choque123') {
+  const handleLogin = (matricula: string, senha_tatica: string, remember: boolean): boolean => {
+    if (matricula === 'Admin' && (senha_tatica === 'choque123' || senha_tatica === 'CHOQUE123')) {
       setIsAuthenticated(true);
+      if (remember) {
+        localStorage.setItem('siva_auth_persistent', 'true');
+        localStorage.setItem('siva_saved_matricula', matricula);
+      }
       showNotification('Acesso autorizado.', 'success');
       return true;
     }
     showNotification('Matrícula ou senha tática incorreta.', 'error');
     return false;
   };
+
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    localStorage.removeItem('siva_auth_persistent');
+    showNotification('Sessão encerrada.', 'success');
+  };
   
   const handleAddVehicle = useCallback(async (newVehicle: Omit<Veiculo, 'id' | 'status' | 'timestamp'>) => {
     if (!db) return;
-
     const isAlreadyStolen = vehicles.some(v => v.placa.toUpperCase() === newVehicle.placa.toUpperCase() && v.status === Status.ROUBADO);
     if (isAlreadyStolen) {
-      showNotification('Placa já possui um alerta de roubo ativo.', 'error');
+      showNotification('Placa já possui um alerta ativo.', 'error');
       return;
     }
-
     try {
       await db.collection(collectionPath).add({
         ...newVehicle,
@@ -106,55 +110,69 @@ const App: React.FC = () => {
         status: Status.ROUBADO,
         timestamp: firebase.firestore.FieldValue.serverTimestamp(),
       });
-      showNotification('Alerta de roubo cadastrado com sucesso!', 'success');
+      showNotification('Alerta cadastrado com sucesso!', 'success');
     } catch (error: any) {
-      console.error("Error adding vehicle:", error);
-      showNotification(`Erro ao cadastrar alerta: ${error.message}`, 'error');
+      showNotification(`Erro ao cadastrar: ${error.message}`, 'error');
     }
   }, [db, vehicles, collectionPath]);
 
   const handleEditVehicle = useCallback(async (id: string, updatedData: Omit<Veiculo, 'id' | 'status' | 'timestamp'>) => {
     if (!db) return;
-
     try {
         await db.collection(collectionPath).doc(id).update({
             ...updatedData,
             placa: updatedData.placa.toUpperCase(),
         });
-        showNotification('Alerta atualizado com sucesso!', 'success');
+        showNotification('Alerta atualizado!', 'success');
     } catch (error: any) {
-        console.error("Error updating vehicle:", error);
-        showNotification(`Erro ao atualizar alerta: ${error.message}`, 'error');
+        showNotification(`Erro ao atualizar: ${error.message}`, 'error');
     }
   }, [db, collectionPath]);
 
   const handleUpdateStatus = useCallback(async (id: string) => {
     if (!db) return;
-
     try {
         await db.collection(collectionPath).doc(id).update({
             status: Status.RECUPERADO,
         });
-        showNotification('Veículo marcado como recuperado.', 'success');
-    } catch (error: any)        {
-        console.error("Error updating vehicle status:", error);
-        showNotification(`Erro ao atualizar status: ${error.message}`, 'error');
+        showNotification('Veículo recuperado!', 'success');
+    } catch (error: any) {
+        showNotification(`Erro no status: ${error.message}`, 'error');
     }
   }, [db, collectionPath]);
 
   const handleDeleteVehicle = useCallback(async (id: string) => {
     if (!db) return;
-
     try {
         await db.collection(collectionPath).doc(id).delete();
-        showNotification('Alerta excluído com sucesso.', 'success');
+        showNotification('Alerta excluído.', 'success');
     } catch (error: any) {
-        console.error("Error deleting vehicle:", error);
-        showNotification(`Erro ao excluir alerta: ${error.message}`, 'error');
+        showNotification(`Erro ao excluir: ${error.message}`, 'error');
     }
   }, [db, collectionPath]);
 
-  if (loading && !vehicles.length) {
+  const handleClearRecovered = useCallback(async () => {
+    if (!db) return;
+    const recovered = vehicles.filter(v => v.status === Status.RECUPERADO);
+    if (recovered.length === 0) {
+      showNotification('Não há veículos recuperados para zerar.', 'error');
+      return;
+    }
+    
+    try {
+      const batch = db.batch();
+      recovered.forEach(v => {
+        const ref = db.collection(collectionPath).doc(v.id);
+        batch.delete(ref);
+      });
+      await batch.commit();
+      showNotification('Histórico de recuperados zerado!', 'success');
+    } catch (error: any) {
+      showNotification(`Erro ao zerar: ${error.message}`, 'error');
+    }
+  }, [db, vehicles, collectionPath]);
+
+  if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-black">
         <Loader2 className="w-12 h-12 text-red-600 animate-spin" />
@@ -163,18 +181,29 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-black text-zinc-300 font-sans flex items-start justify-center pt-8 md:pt-16">
-        <div className="w-full max-w-lg mx-auto p-4">
+    <div className="min-h-screen bg-black text-zinc-300 font-sans flex items-start justify-center pt-8 md:pt-16 px-4 pb-12">
+        <div className="w-full max-w-lg mx-auto">
             {!isAuthenticated ? (
                 <LoginScreen onLogin={handleLogin} />
             ) : (
-                <Dashboard 
-                    vehicles={vehicles}
-                    onAddVehicle={handleAddVehicle}
-                    onEditVehicle={handleEditVehicle}
-                    onUpdateStatus={handleUpdateStatus}
-                    onDeleteVehicle={handleDeleteVehicle}
-                />
+                <>
+                    <div className="flex justify-end mb-2">
+                      <button 
+                        onClick={handleLogout}
+                        className="flex items-center text-xs text-zinc-500 hover:text-red-500 transition-colors"
+                      >
+                        <LogOut className="w-3 h-3 mr-1" /> Sair
+                      </button>
+                    </div>
+                    <Dashboard 
+                        vehicles={vehicles}
+                        onAddVehicle={handleAddVehicle}
+                        onEditVehicle={handleEditVehicle}
+                        onUpdateStatus={handleUpdateStatus}
+                        onDeleteVehicle={handleDeleteVehicle}
+                        onClearRecovered={handleClearRecovered}
+                    />
+                </>
             )}
         </div>
         {notification && <NotificationPopup message={notification.message} type={notification.type} />}
