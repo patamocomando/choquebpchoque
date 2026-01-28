@@ -1,25 +1,17 @@
 {
-  "id": "br.gov.pb.pm.bpchoque.siva.v1",
+  "id": "br.gov.pb.pm.bpchoque.siva.v2",
   "name": "SIVA - Alerta BPCHOQUE",
   "short_name": "SIVA",
-  "description": "Sistema Tático de Vigilância Automotiva",
+  "description": "Sistema de Vigilância Automotiva BPCHOQUE",
   "start_url": "/index.html",
-  "scope": "/",
   "display": "standalone",
   "background_color": "#000000",
   "theme_color": "#000000",
   "orientation": "portrait",
-  "prefer_related_applications": false,
   "icons": [
     {
       "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgZmlsbD0iIzAwMDAwMCIvPjxwYXRoIGQ9Ik0yNTYgNjRMMTA2IDEyOHYxMjhjMCA5Mi41IDYzLjggMTc5LjIgMTUwIDIwOCAxMS4zLTMuOCAyMi4yLTguNCAzMi40LTEzLjggTDI1NiA2NHoiIGZpbGw9IiNjODAwMDAiLz48cGF0aCBkPSJNMjU2IDY0djMzNmM4Ni4yLTI4LjggMTUwLTExNS41IDE1MC0yMDhWMTI4TDI1NiA2NHoiIGZpbGw9IiNhYTAwMDAiLz48cG9seWdvbiBwb2ludHM9IjI1NiwxMjggMTkyLDI1NiAyNTYsMjU2IDE5MiwzODQgMzIwLDI1NiAyNTYsMjU2IDMyMCwxMjgiIGZpbGw9IiNmZmZmZmYiLz48L3N2Zz4=",
       "sizes": "192x192",
-      "type": "image/svg+xml",
-      "purpose": "any"
-    },
-    {
-      "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgZmlsbD0iIzAwMDAwMCIvPjxwYXRoIGQ9Ik0yNTYgNjRMMTA2IDEyOHYxMjhjMCA5Mi41IDYzLjggMTc5LjIgMTUwIDIwOCAxMS4zLTMuOCAyMi4yLTguNCAzMi40LTEzLjggTDI1NiA2NHoiIGZpbGw9IiNjODAwMDAiLz48cGF0aCBkPSJNMjU2IDY0djMzNmM4Ni4yLTI4LjggMTUwLTExNS41IDE1MC0yMDhWMTI4TDI1NiA2NHoiIGZpbGw9IiNhYTAwMDAiLz48cG9seWdvbiBwb2ludHM9IjI1NiwxMjggMTkyLDI1NiAyNTYsMjU2IDE5MiwzODQgMzIwLDI1NiAyNTYsMjU2IDMyMCwxMjgiIGZpbGw9IiNmZmZmZmYiLz48L3N2Zz4=",
-      "sizes": "512x512",
       "type": "image/svg+xml",
       "purpose": "any"
     },
