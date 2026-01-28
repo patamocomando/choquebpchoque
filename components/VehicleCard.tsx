@@ -14,16 +14,24 @@ const VehicleCard: React.FC<VehicleCardProps> = ({ vehicle, onUpdateStatus, onDe
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [isRecoverModalOpen, setIsRecoverModalOpen] = useState(false);
     const isStolen = vehicle.status === Status.ROUBADO;
+    
     const cardClasses = isStolen
-        ? 'bg-zinc-900 border-l-4 border-red-600'
-        : 'bg-zinc-900 border-l-4 border-zinc-600 opacity-60';
+        ? 'bg-zinc-900 border-l-4 border-red-600 shadow-[0_0_15px_rgba(220,38,38,0.1)]'
+        : 'bg-zinc-900 border-l-4 border-green-600/50 opacity-70';
 
     const formatDate = (timestamp: any) => {
-        if (!timestamp?.toDate) return 'Aguardando...';
-        return new Intl.DateTimeFormat('pt-BR', {
-            dateStyle: 'short',
-            timeStyle: 'short',
-        }).format(timestamp.toDate());
+        if (!timestamp) return 'Registro Antigo';
+        try {
+            const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp.seconds * 1000);
+            return new Intl.DateTimeFormat('pt-BR', {
+                day: '2-digit',
+                month: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+            }).format(date);
+        } catch (e) {
+            return 'Data Indisponível';
+        }
     };
     
     const handleDeleteConfirm = () => {
@@ -38,73 +46,73 @@ const VehicleCard: React.FC<VehicleCardProps> = ({ vehicle, onUpdateStatus, onDe
 
     return (
         <>
-            <div className={`p-4 rounded-lg shadow-md flex flex-col space-y-3 ${cardClasses} animate-fade-in-up`}>
+            <div className={`p-4 rounded-lg flex flex-col space-y-3 ${cardClasses} transition-all duration-300 border border-zinc-800/50`}>
                 <div className="flex justify-between items-start">
                     <div className="flex items-center space-x-3">
-                        <Car className={`w-6 h-6 ${isStolen ? 'text-red-500' : 'text-zinc-500'}`} />
+                        <div className={`p-2 rounded bg-black/40 ${isStolen ? 'text-red-500' : 'text-green-500'}`}>
+                            <Car className="w-5 h-5" />
+                        </div>
                         <div>
-                            <p className="font-bold text-lg text-zinc-100">{vehicle.placa}</p>
-                            <p className="text-sm text-zinc-400">{vehicle.modelo || 'Modelo não informado'} - {vehicle.tipo}</p>
+                            <p className="font-black text-xl text-zinc-100 tracking-tight leading-none uppercase">{vehicle.placa}</p>
+                            <p className="text-[11px] font-bold text-zinc-500 uppercase mt-1">
+                                {vehicle.modelo || 'S/ MODELO'} • {vehicle.tipo}
+                            </p>
                         </div>
                     </div>
-                    <span className={`px-2 py-1 text-xs font-semibold rounded-full ${isStolen ? 'bg-red-600/20 text-red-400' : 'bg-green-600/20 text-green-400'}`}>
+                    <span className={`px-2 py-0.5 text-[9px] font-black rounded uppercase tracking-wider ${isStolen ? 'bg-red-600 text-white' : 'bg-green-600 text-white'}`}>
                         {vehicle.status}
                     </span>
                 </div>
 
-                <div className="text-sm text-zinc-300 space-y-2 pl-9">
+                <div className="grid grid-cols-2 gap-y-2 text-[12px] text-zinc-400 pl-1">
                     <div className="flex items-center space-x-2">
-                        <MapPin className="w-4 h-4 text-zinc-500" />
-                        <span>{vehicle.local || 'Local não informado'}</span>
+                        <MapPin className="w-3 h-3 text-red-500" />
+                        <span className="truncate">{vehicle.local || 'Local N/I'}</span>
                     </div>
-                    {vehicle.cor && (
-                        <div className="flex items-center space-x-2">
-                            <Paintbrush className="w-4 h-4 text-zinc-500" />
-                            <span>{vehicle.cor}</span>
+                    <div className="flex items-center space-x-2">
+                        <Paintbrush className="w-3 h-3 text-red-500" />
+                        <span className="capitalize">{vehicle.cor || 'Cor N/I'}</span>
+                    </div>
+                    <div className="flex items-center space-x-2 col-span-2">
+                        <Clock className="w-3 h-3 text-zinc-500" />
+                        <span className="font-mono">{formatDate(vehicle.timestamp)}</span>
+                    </div>
+                    {vehicle.observacoes && (
+                        <div className="flex items-start space-x-2 col-span-2 bg-black/20 p-2 rounded italic text-[11px]">
+                            <FileText className="w-3 h-3 text-zinc-600 mt-0.5" />
+                            <span className="leading-tight text-zinc-500">{vehicle.observacoes}</span>
                         </div>
                     )}
-                    <div className="flex items-center space-x-2">
-                        <FileText className="w-4 h-4 text-zinc-500" />
-                        <span>{vehicle.observacoes || 'Nenhuma observação'}</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                        <Clock className="w-4 h-4 text-zinc-500" />
-                        <span>{formatDate(vehicle.timestamp)}</span>
-                    </div>
                 </div>
 
-                <div className="flex justify-end items-center space-x-2 pt-2">
-                    <button
-                        onClick={() => onEdit(vehicle)}
-                        className="text-zinc-400 hover:text-yellow-500 transition-colors p-2"
-                        aria-label="Editar Alerta"
-                    >
-                        <FilePenLine className="w-4 h-4" />
-                    </button>
-                     <button
-                        onClick={() => setIsDeleteModalOpen(true)}
-                        className="text-zinc-400 hover:text-red-500 transition-colors p-2"
-                        aria-label="Excluir Alerta"
-                    >
-                        <Trash2 className="w-4 h-4" />
-                    </button>
+                <div className="flex justify-between items-center pt-2 border-t border-zinc-800/50">
+                    <div className="flex space-x-1">
+                        <button onClick={() => onEdit(vehicle)} className="p-2 text-zinc-500 hover:text-yellow-500 transition-colors">
+                            <FilePenLine className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => setIsDeleteModalOpen(true)} className="p-2 text-zinc-500 hover:text-red-500 transition-colors">
+                            <Trash2 className="w-4 h-4" />
+                        </button>
+                    </div>
+                    
                     {isStolen && (
                         <button
                             onClick={() => setIsRecoverModalOpen(true)}
-                            className="bg-green-600 text-white font-bold py-2 px-4 rounded-md text-sm hover:bg-green-700 transition-colors flex items-center"
+                            className="bg-green-600 text-white font-black py-2 px-4 rounded text-[10px] hover:bg-green-700 transition-colors flex items-center uppercase tracking-tighter"
                         >
-                            <CheckCircle className="w-4 h-4 mr-2" />
-                            Marcar como Recuperado
+                            <CheckCircle className="w-3 h-3 mr-1.5" />
+                            Veículo Recuperado
                         </button>
                     )}
                 </div>
             </div>
+
             <ConfirmationModal 
                 isOpen={isDeleteModalOpen}
                 onClose={() => setIsDeleteModalOpen(false)}
                 onConfirm={handleDeleteConfirm}
-                title="Confirmar Exclusão"
-                message={`Tem certeza que deseja excluir permanentemente o alerta do veículo de placa ${vehicle.placa}? Esta ação não pode ser desfeita.`}
+                title="Excluir Registro"
+                message={`Deseja apagar definitivamente o alerta da placa ${vehicle.placa}?`}
                 confirmText="Excluir"
             />
             <ConfirmationModal 
@@ -112,7 +120,7 @@ const VehicleCard: React.FC<VehicleCardProps> = ({ vehicle, onUpdateStatus, onDe
                 onClose={() => setIsRecoverModalOpen(false)}
                 onConfirm={handleRecoverConfirm}
                 title="Confirmar Recuperação"
-                message={`Tem certeza que deseja marcar o veículo de placa ${vehicle.placa} como RECUPERADO?`}
+                message={`A placa ${vehicle.placa} foi localizada?`}
                 confirmText="Confirmar"
             />
         </>

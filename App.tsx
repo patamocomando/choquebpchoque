@@ -3,7 +3,7 @@ import { Veiculo, Status, Notification } from './types.ts';
 import LoginScreen from './components/LoginScreen.tsx';
 import Dashboard from './components/Dashboard.tsx';
 import NotificationPopup from './components/NotificationPopup.tsx';
-import { Loader2, LogOut, Download } from 'lucide-react';
+import { Loader2, LogOut } from 'lucide-react';
 
 declare global {
   const __firebase_config: any;
@@ -18,16 +18,10 @@ const App: React.FC = () => {
   const [vehicles, setVehicles] = useState<Veiculo[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [notification, setNotification] = useState<Notification>(null);
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
 
   const collectionPath = `artifacts/${__app_id}/public/data/veiculos`;
 
   useEffect(() => {
-    window.addEventListener('beforeinstallprompt', (e) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
-    });
-
     try {
       if (!firebase.apps.length) {
         firebase.initializeApp(__firebase_config);
@@ -44,19 +38,40 @@ const App: React.FC = () => {
             setIsAuthenticated(true);
           }
         })
-        .catch((error: any) => {
-          console.error("Auth error:", error);
-        })
+        .catch((error: any) => console.error("Auth error:", error))
         .finally(() => setLoading(false));
     } catch (error: any) {
         setLoading(false);
     }
   }, []);
 
+  // Função para limpar dados com mais de 40 dias
+  const performAutoCleanup = useCallback(async (data: Veiculo[]) => {
+    if (!db || data.length === 0) return;
+    
+    const FORTY_DAYS_MS = 40 * 24 * 60 * 60 * 1000;
+    const now = Date.now();
+    const toDelete = data.filter(v => {
+      if (!v.timestamp) return false; // Não apaga dados sem data para evitar perdas acidentais
+      const docDate = v.timestamp.seconds ? v.timestamp.seconds * 1000 : v.timestamp;
+      return (now - docDate) > FORTY_DAYS_MS;
+    });
+
+    if (toDelete.length > 0) {
+      const batch = db.batch();
+      toDelete.forEach(v => {
+        const ref = db.collection(collectionPath).doc(v.id);
+        batch.delete(ref);
+      });
+      await batch.commit();
+      console.log(`${toDelete.length} registros antigos (40 dias+) foram removidos automaticamente.`);
+    }
+  }, [db, collectionPath]);
+
   useEffect(() => {
     if (!user || !db) return;
 
-    // REMOVIDO orderBy direto no Firestore para garantir que documentos SEM timestamp apareçam
+    // BUSCA TOTAL: Sem filtros de ordenação no Firestore para garantir que dados antigos apareçam
     const unsubscribe = db.collection(collectionPath)
       .onSnapshot((snapshot: any) => {
         const vehiclesData = snapshot.docs.map((doc: any) => ({
@@ -64,7 +79,7 @@ const App: React.FC = () => {
           ...doc.data(),
         } as Veiculo));
         
-        // ORDENAÇÃO NO CLIENTE: Garante que o editado/novo suba sem sumir com os antigos
+        // ORDENAÇÃO NO CLIENTE: Garante que o editado/novo suba, mas mantém os sem timestamp visíveis no fim
         const sortedData = vehiclesData.sort((a, b) => {
           const timeA = a.timestamp?.seconds || 0;
           const timeB = b.timestamp?.seconds || 0;
@@ -72,12 +87,17 @@ const App: React.FC = () => {
         });
 
         setVehicles(sortedData);
+        
+        // Se estiver logado como admin, executa a limpeza de 40 dias
+        if (isAuthenticated) {
+            performAutoCleanup(sortedData);
+        }
       }, (error: any) => {
-        console.error("Error fetching data:", error);
+        console.error("Firestore error:", error);
       });
 
     return () => unsubscribe();
-  }, [user, db, collectionPath]);
+  }, [user, db, collectionPath, isAuthenticated, performAutoCleanup]);
 
   const showNotification = (message: string, type: 'success' | 'error') => {
     setNotification({ message, type });
@@ -85,10 +105,11 @@ const App: React.FC = () => {
   };
 
   const handleLogin = (matricula: string, senha_tatica: string, remember: boolean): boolean => {
-    if (matricula === 'Admin' && (senha_tatica === 'choque123' || senha_tatica === 'CHOQUE123')) {
+    const isMaster = matricula === 'Admin' && (senha_tatica === 'choque123' || senha_tatica === 'CHOQUE123');
+    if (isMaster) {
       setIsAuthenticated(true);
       if (remember) localStorage.setItem('siva_auth_persistent', 'true');
-      showNotification('Acesso autorizado.', 'success');
+      showNotification('Acesso autorizado. Faxina de 40 dias iniciada.', 'success');
       return true;
     }
     showNotification('Dados incorretos.', 'error');
@@ -116,10 +137,9 @@ const App: React.FC = () => {
         await db.collection(collectionPath).doc(id).update({
             ...updatedData,
             placa: updatedData.placa.toUpperCase(),
-            // Atualizar o timestamp faz com que o veículo suba para o topo
             timestamp: firebase.firestore.FieldValue.serverTimestamp(),
         });
-        showNotification('Alerta atualizado!', 'success');
+        showNotification('Alerta atualizado e movido para o topo!', 'success');
     } catch (error: any) {
         showNotification('Erro ao editar.', 'error');
     }
@@ -132,7 +152,7 @@ const App: React.FC = () => {
             status: Status.RECUPERADO,
             timestamp: firebase.firestore.FieldValue.serverTimestamp(),
         });
-        showNotification('Recuperado!', 'success');
+        showNotification('Veículo recuperado!', 'success');
     } catch (error: any) {
         showNotification('Erro ao atualizar.', 'error');
     }
@@ -142,11 +162,26 @@ const App: React.FC = () => {
     if (!db) return;
     try {
         await db.collection(collectionPath).doc(id).delete();
-        showNotification('Excluído.', 'success');
+        showNotification('Registro excluído.', 'success');
     } catch (error: any) {
         showNotification('Erro ao excluir.', 'error');
     }
   }, [db, collectionPath]);
+
+  const handleClearRecovered = useCallback(async () => {
+    if (!db) return;
+    const recovered = vehicles.filter(v => v.status === Status.RECUPERADO);
+    if (recovered.length === 0) return;
+    
+    try {
+      const batch = db.batch();
+      recovered.forEach(v => batch.delete(db.collection(collectionPath).doc(v.id)));
+      await batch.commit();
+      showNotification('Histórico limpo.', 'success');
+    } catch (error: any) {
+      showNotification('Erro na limpeza.', 'error');
+    }
+  }, [db, vehicles, collectionPath]);
 
   if (loading) return <div className="flex items-center justify-center min-h-screen bg-black"><Loader2 className="w-12 h-12 text-red-600 animate-spin" /></div>;
 
@@ -156,14 +191,27 @@ const App: React.FC = () => {
             {!isAuthenticated ? (
                 <LoginScreen onLogin={handleLogin} />
             ) : (
-                <Dashboard 
-                    vehicles={vehicles}
-                    onAddVehicle={handleAddVehicle}
-                    onEditVehicle={handleEditVehicle}
-                    onUpdateStatus={handleUpdateStatus}
-                    onDeleteVehicle={handleDeleteVehicle}
-                    onClearRecovered={async () => {}} // Lógica interna do Dashboard
-                />
+                <>
+                    <div className="flex justify-end mb-4">
+                        <button 
+                            onClick={() => {
+                                setIsAuthenticated(false);
+                                localStorage.removeItem('siva_auth_persistent');
+                            }}
+                            className="text-xs text-zinc-600 hover:text-red-500 flex items-center"
+                        >
+                            <LogOut className="w-3 h-3 mr-1" /> Sair do Sistema
+                        </button>
+                    </div>
+                    <Dashboard 
+                        vehicles={vehicles}
+                        onAddVehicle={handleAddVehicle}
+                        onEditVehicle={handleEditVehicle}
+                        onUpdateStatus={handleUpdateStatus}
+                        onDeleteVehicle={handleDeleteVehicle}
+                        onClearRecovered={handleClearRecovered}
+                    />
+                </>
             )}
         </div>
         {notification && <NotificationPopup message={notification.message} type={notification.type} />}
