@@ -23,7 +23,6 @@ const App: React.FC = () => {
   const collectionPath = `artifacts/${__app_id}/public/data/veiculos`;
 
   useEffect(() => {
-    // Escuta evento de instalação do PWA
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
       setDeferredPrompt(e);
@@ -136,6 +135,8 @@ const App: React.FC = () => {
         await db.collection(collectionPath).doc(id).update({
             ...updatedData,
             placa: updatedData.placa.toUpperCase(),
+            // Atualizar timestamp faz com que o veículo suba para o topo da lista (ordenada desc)
+            timestamp: firebase.firestore.FieldValue.serverTimestamp(),
         });
         showNotification('Alerta atualizado!', 'success');
     } catch (error: any) {
@@ -148,6 +149,7 @@ const App: React.FC = () => {
     try {
         await db.collection(collectionPath).doc(id).update({
             status: Status.RECUPERADO,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp(),
         });
         showNotification('Veículo recuperado!', 'success');
     } catch (error: any) {
